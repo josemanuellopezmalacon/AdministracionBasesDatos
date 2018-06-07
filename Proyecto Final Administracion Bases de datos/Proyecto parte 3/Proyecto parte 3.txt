@@ -1,0 +1,14 @@
+3.La BD debe contener todas las tablas del esquema desde la versión 1.0 del sistema
+	a.Se debe crear un SCHEMA para las tablas que están en comercial, cxc e inventarios
+	b.Se debe crear un TABLESPACE para las tablas que están en CXC, Comercial e Inventarios
+-EL script "ScriptBD" con tiene la creacion de la TABLESPACE, SCHEMA, todas la tablas
+ y los procedimientos almacenados necesarios
+
+--Creación de Tablespace
+create TABLESPACE TB LOCATION 'C:\TB';
+--Creación de Base de Datos
+create database launica tablespace TB;
+--Creación de schemas
+create schema CXC;
+create schema Comercial;
+create schema Inventarios;

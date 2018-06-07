@@ -1,0 +1,5 @@
+a.Instalación desatendida
+ - Es el .bat llamado InstalacionPostgreSQL10Windowsx64
+b.Setup (Auto estudio se recomienda checar la herramienta InnoSetup)
+ - el codigo del setup es SetUpLaUnica y la carpeta Output es el instalador creado con InnoSetUp
+   (postgres 10wx64,aplicacion comercial,bat que restaura la base de datos, npgsql,ODBC y slony)

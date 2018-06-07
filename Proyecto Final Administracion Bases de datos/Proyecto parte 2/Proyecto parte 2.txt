@@ -1,0 +1,5 @@
+2.La versión 1.0 de la aplicación comercial debe tener esta funcionalidad
+	a.ABC de Agentes
+	b.ABC de Clientes
+	-La carpeta "LaÚnica" contiene la aplicacion comercial creada en Visual B .net 2015
+	, se conecto a la BD usando Npgsql y ODBC

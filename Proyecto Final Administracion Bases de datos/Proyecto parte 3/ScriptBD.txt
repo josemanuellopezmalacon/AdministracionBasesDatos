@@ -1,0 +1,212 @@
+﻿--Creación de Tablespace
+create TABLESPACE TB LOCATION 'C:\TB';
+--Creación de Base de Datos
+create database launica tablespace TB;
+--Creación de schemas
+create schema CXC;
+create schema Comercial;
+create schema Inventarios;
+--Creación de tablas con PK y FK
+create table Comercial.Agente (
+id BIGSERIAL constraint pk_agente PRIMARY KEY,
+apellido_paterno VARCHAR(45),
+apellido_materno VARCHAR(45),
+nombre VARCHAR(45),
+rfc VARCHAR(13),
+zona_id bigint
+);
+
+create table Inventarios.Producto (
+id BIGSERIAL constraint pk_producto PRIMARY KEY,
+nombre VARCHAR(45)
+);
+
+create table CXC.Clientes(
+id BIGSERIAL constraint pk_clientes PRIMARY KEY,
+nombre VARCHAR(45),
+apellido_paterno VARCHAR(45),
+apellido_materno VARCHAR(45),
+rfc VARCHAR(13),
+agente_id bigint REFERENCES Comercial.Agente(id)
+);
+
+create table Comercial.Venta (
+id BIGSERIAL constraint pk_venta PRIMARY KEY,
+folio BIGINT,
+fecha DATE,
+cliente_id BIGINT REFERENCES CXC.Clientes(id),
+agente_id BIGINT REFERENCES Comercial.Agente(id),
+estatus BIGINT
+);
+
+create table Comercial.DetalleVenta (
+id BIGSERIAL constraint pk_detalleventa PRIMARY KEY,
+detalle_venta_id BIGINT REFERENCES Comercial.Venta(id),
+producto_id BIGINT REFERENCES Inventarios.Producto(id),
+cantidad NUMERIC(14,4),
+precio NUMERIC(14,4),
+tasa_iva_id BIGINT
+);
+
+create table Comercial.comisiones (
+id BIGSERIAL constraint pk_comisiones PRIMARY KEY,
+venta_id BIGINT REFERENCES Comercial.Venta(id),
+agente_id BIGINT REFERENCES Comercial.Agente(id),
+total NUMERIC(14,4),
+comisionescol VARCHAR(45)
+);
+
+create table CXC.TipoMovimientoCXC(
+id BIGSERIAL constraint pk_tipmov PRIMARY KEY,
+nombre VARCHAR(45),
+naturaleza int
+);
+
+create table Inventarios.TipoMovimiento(
+id int constraint pk_tipmov PRIMARY KEY,
+nombre VARCHAR(45),
+naturaleza int
+);
+
+create table Inventarios.MovimientoInventario(
+id BIGSERIAL constraint pk_movimientosinv PRIMARY KEY,
+folio INT,
+producto_id BIGINT REFERENCES Inventarios.Producto(id),
+fecha INT,
+cantidad NUMERIC(14,4),
+naturaleza INT,
+tipo_movimiento_id BIGINT REFERENCES Inventarios.TipoMovimiento(id),
+MovimientoInventariocol VARCHAR(45),
+almacen_id BIGINT,
+MovimientoInventariocol1 VARCHAR(45)
+);
+
+create table CXC.CuentasPorCobrar(
+id BIGSERIAL constraint pk_cxc PRIMARY KEY,
+folio INT,
+cliente_id BIGINT REFERENCES CXC.Clientes(id),
+venta_id BIGINT REFERENCES Comercial.Venta(id),
+total NUMERIC(14,4),
+saldo NUMERIC(14,4)
+);
+
+create table CXC.MovimientosCXC(
+id BIGSERIAL constraint pk_movcxc PRIMARY KEY,
+tipo_movimiento_id BIGINT REFERENCES CXC.TipoMovimientoCXC(id),
+folio int,
+fecha DATE,
+importe NUMERIC(14,4),
+naturaleza CHAR(1),
+cxc_id BIGINT REFERENCES CXC.CuentasPorCobrar(id)
+);
+
+
+
+--FUNCIONES
+CREATE OR REPLACE FUNCTION Comercial.Alta_Agentes(apellidop VARCHAR(45), apellidom VARCHAR(45), nombre VARCHAR(45),rfc VARCHAR(13),zona bigint) 
+RETURNS void AS $$
+BEGIN
+  IF (length(rfc)>13) THEN
+  	RAISE EXCEPTION 'RFC debe ser de 13 caracteres--> %', rfc;       
+  END IF;
+
+  IF (length(rfc)<13) THEN
+  	RAISE EXCEPTION 'RFC debe ser de 13 caracteres--> %', rfc;       
+  END IF;
+  INSERT INTO comercial.agente(apellido_paterno, apellido_materno, nombre, rfc, zona_id) VALUES (apellidop,apellidom,nombre,rfc,zona);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION CXC.Alta_Clientes(nombre VARCHAR(45),apellidop VARCHAR(45), apellidom VARCHAR(45),rfc VARCHAR(13),agentes bigint) 
+RETURNS void AS $$
+BEGIN
+  IF not exists (Select id from Comercial.Agente where id=agentes) THEN
+  	RAISE EXCEPTION 'Agente ID no existe --> %', agentes USING HINT = 'Por favor checa el ID del Agente';        
+  END IF;
+  IF (length(rfc)>13) THEN
+  	RAISE EXCEPTION 'RFC debe ser de 13 caracteres--> %', rfc;       
+  END IF;
+  IF (length(rfc)<13) THEN
+  	RAISE EXCEPTION 'RFC debe ser de 13 caracteres--> %', rfc;       
+  END IF;
+  INSERT INTO CXC.Clientes(nombre, apellido_paterno, apellido_materno,  rfc, agente_id) VALUES (nombre,apellidop,apellidom,rfc,agentes);       
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION Comercial.Baja_Agentes(_id BIGINT) 
+RETURNS void AS $$
+BEGIN
+	IF not exists (Select id from Comercial.Agente where agente.id=_id) THEN
+  		RAISE EXCEPTION 'Agente ID no existe --> %', _id USING HINT = 'Por favor checa el ID del Agente';
+	END IF;
+	IF(SELECT count(*) FROM comercial.agente,CXC.clientes where agente.id=_id and agente.id=clientes.agente_id)>0 THEN
+		RAISE EXCEPTION 'El agente cuenta con clientes,asignelos a otro agente por favor';
+	END IF;
+	DELETE FROM comercial.agente WHERE agente.id = _id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION CXC.Baja_Clientes(_id BIGINT) 
+RETURNS void AS $$
+BEGIN
+	IF not exists (Select id from CXC.Clientes where Clientes.id=_id) THEN
+  		RAISE EXCEPTION 'Cliente ID no existe --> %', _id USING HINT = 'Por favor checa el ID del Cliente';
+	END IF;
+	DELETE FROM CXC.Clientes WHERE Clientes.id = _id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION Comercial.Modif_Agentes(_id BIGINT,apellidop VARCHAR(45), apellidom VARCHAR(45), _nombre VARCHAR(45), _rfc VARCHAR(13),zona bigint) 
+RETURNS void AS $$
+BEGIN
+	IF (length(_rfc)>13) THEN
+  		RAISE EXCEPTION 'RFC debe ser de 13 caracteres--> %', _rfc;       
+   	END IF;
+   	IF (length(_rfc)<13) THEN
+  		RAISE EXCEPTION 'RFC debe ser de 13 caracteres--> %', _rfc;       
+   	END IF;
+	UPDATE Comercial.Agente SET (apellido_paterno, apellido_materno, nombre, rfc, zona_id) = (apellidop,apellidom,_nombre,_rfc,zona)
+  	WHERE id=_id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION CXC.Modif_Clientes(_id BIGINT,_nombre VARCHAR(45),apellidop VARCHAR(45), apellidom VARCHAR(45), _rfc VARCHAR(13),agentes bigint) 
+RETURNS void AS $$
+BEGIN
+	IF not exists (Select id from Comercial.Agente where id=agentes) THEN
+  		RAISE EXCEPTION 'Agente ID no existe --> %', agentes USING HINT = 'Por favor checa el ID del Agente';        
+  	END IF;
+	IF (length(_rfc)>13) THEN
+  		RAISE EXCEPTION 'RFC debe ser de 13 caracteres--> %', _rfc;       
+   	END IF;
+   	IF (length(_rfc)<13) THEN
+  		RAISE EXCEPTION 'RFC debe ser de 13 caracteres--> %', _rfc;       
+   	END IF;
+	UPDATE CXC.Clientes SET (nombre,apellido_paterno, apellido_materno,rfc, agente_id) = (_nombre,apellidop,apellidom,_rfc,agentes)
+  	WHERE id=_id;
+END;
+$$ LANGUAGE plpgsql;
+
+--Particionado
+Create table CXC.Clientes_par(check(id%2=0)) inherits(CXC.Clientes);
+Create table CXC.Clientes_impar(check(id%2!=0)) inherits(CXC.Clientes);
+
+Create index CXC.Clientes_par_id ON CXC.Clientes_par(id);
+Create index CXC.Clientes_impar_id ON CXC.Clientes_impar(id);
+
+CREATE OR REPLACE FUNCTION CXC.clientes_id_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+	IF (NEW.id%2)=0 THEN
+		INSERT INTO CXC.Clientes_par VALUES (NEW.*);
+	ELSE
+		INSERT INTO CXC.Clientes_impar VALUES (NEW.*);
+	END IF;
+	RETURN NULL;
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER insert_clientes_trigger
+	BEFORE INSERT ON CXC.Clientes
+	FOR EACH ROW EXECUTE PROCEDURE CXC.clientes_id_insert();

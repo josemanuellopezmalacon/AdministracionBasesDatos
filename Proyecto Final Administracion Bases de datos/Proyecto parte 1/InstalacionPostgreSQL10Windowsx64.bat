@@ -1,0 +1,1 @@
+C:\Program Files(x86)\LaUnica\postgresql-10.4-1-windows-x64.exe --mode unattended --superpassword clickbalance123 --serverport 5030 --prefix "C:\Program Files\postgresql" --datadir "C:\Program Files\postgresql\data" --unattendedmodeui none

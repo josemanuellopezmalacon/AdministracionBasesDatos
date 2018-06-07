@@ -1,0 +1,20 @@
+5.Implementar un esquema de particionado sobre la tabla cliente en base al valor del id
+	a.Pares
+	b.Impares
+
+CREATE OR REPLACE FUNCTION CXC.clientes_id_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+	IF (NEW.id%2)=0 THEN
+		INSERT INTO CXC.Clientes_par VALUES (NEW.*);
+	ELSE
+		INSERT INTO CXC.Clientes_impar VALUES (NEW.*);
+	END IF;
+	RETURN NULL;
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER insert_clientes_trigger
+	BEFORE INSERT ON CXC.Clientes
+	FOR EACH ROW EXECUTE PROCEDURE CXC.clientes_id_insert();

@@ -1,0 +1,14 @@
+6.Se requiere Implementar un esquema de replicación (Espejo) para que el sistema 
+   este preparado para cualquier contingencia
+--Crear el archivo master "Slony_master.bat" y el esclavo "Slony_slave.bat" 
+--y ponerlos en la carpeta bin de postgres
+--acceder a la carpeta bin de postgres en CMD como administrador
+cd C:\Program Files\postgresql\bin
+-- crear los cluster
+slonik Slony_master.bat
+slonik Slony_slave.bat
+
+-- empezar la replicacion en el maestro
+slon primer_cluster2 "host=localhost dbname =launica port = 5030 host = localhost user = postgres password=clickbalance123"
+-- empezar la replicacion en el esclavo
+slon primer_cluster2 "host=localhost dbname =postgres port = 5030 host = localhost user = postgres password=clickbalance123"

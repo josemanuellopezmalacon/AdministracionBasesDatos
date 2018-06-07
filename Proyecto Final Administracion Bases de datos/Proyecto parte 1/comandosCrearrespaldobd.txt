@@ -1,0 +1,1 @@
+pg_dump -U postgres -W clickbalance123 -d launica -p 5030 >RespaldoLaUnica.sql
